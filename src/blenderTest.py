@@ -119,8 +119,18 @@ z_step_size = obj.dimensions[2]/cut_region
 bisection_outer = bmesh.new()
 bisection_outer.from_mesh(C.object.data)
 
-cut_verts = []
-cut_edges = []
+
+def fill(geom,mesh):
+
+    bmesh.ops.holes_fill(mesh, edges=[e for e in geom['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
+    # bmesh.ops.face_attribute_fill(mesh, use_data=True, faces=[f for f in geom['geom'] if isinstance(f, bmesh.types.BMFace)])
+    # bmesh.ops.dissolve_limit(mesh, angle_limit=0.02, use_dissolve_boundaries=True, verts=[f for f in geom['geom'] if isinstance(f, bmesh.types.BMVert)], edges=[f for f in geom['geom'] if isinstance(f, bmesh.types.BMEdge)])
+
+    # bmesh.ops.face_attribute_fill(bisection_inner_x, use_data=True, faces=[f for f in ret_y_inner['geom'] if isinstance(f, bmesh.types.BMFace)])
+    # bmesh.ops.solidify(mesh, geom=mesh.verts[:]+mesh.edges[:]+mesh.faces[:], thickness=0.1)
+
+    return mesh
+
 
 i = int(round(object_details.x.min))
 while i <= int(round(object_details.x.max)):
@@ -133,13 +143,8 @@ while i <= int(round(object_details.x.max)):
             ret_x_outer = bmesh.ops.bisect_plane(bisection_outer, geom=bisection_outer.verts[:]+bisection_outer.edges[:]+bisection_outer.faces[:], plane_co=(i,0,0), plane_no=(1,0,0), clear_inner=True)
             ret_x_inner = bmesh.ops.bisect_plane(bisection_inner, geom=bisection_inner.verts[:]+bisection_inner.edges[:]+bisection_inner.faces[:], plane_co=(i,0,0), plane_no=(1,0,0), clear_outer=True)
             
-            cut_verts.extend([v.index for v in ret_x_inner['geom_cut'] if isinstance(v, bmesh.types.BMVert)])
-            cut_edges.extend([e.index for e in ret_x_inner['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-            ret_x_inner = bmesh.ops.holes_fill(bisection_inner, edges=[e for e in ret_x_inner['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-                    
-            cut_verts.extend([v.index for v in ret_x_outer['geom_cut'] if isinstance(v, bmesh.types.BMVert)])
-            cut_edges.extend([e.index for e in ret_x_outer['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-            ret_x_outer = bmesh.ops.holes_fill(bisection_outer, edges=[e for e in ret_x_outer['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
+            fill(ret_x_inner,bisection_inner)
+            fill(ret_x_outer,bisection_outer)
 
             to_divide_y = newobj(bisection_inner, "bisect-"+str(cut_index_x))
 
@@ -148,7 +153,7 @@ while i <= int(round(object_details.x.max)):
             bisection_outer_x = bmesh.new()
             bisection_outer_x.from_mesh(to_divide_y.data)
 
-            # myDelete(to_divide_y)
+            myDelete(to_divide_y)
              
             j = int(round(object_details.y.min))
             while j <= int(round(object_details.y.max)):
@@ -160,14 +165,8 @@ while i <= int(round(object_details.x.max)):
                     ret_y_outer = bmesh.ops.bisect_plane(bisection_outer_x, geom=bisection_outer_x.verts[:]+bisection_outer_x.edges[:]+bisection_outer_x.faces[:], plane_co=(0,j,0), plane_no=(0,1,0), clear_inner=True)
                     ret_y_inner = bmesh.ops.bisect_plane(bisection_inner_x, geom=bisection_inner_x.verts[:]+bisection_inner_x.edges[:]+bisection_inner_x.faces[:], plane_co=(0,j,0), plane_no=(0,1,0), clear_outer=True)
                     
-                    cut_verts.extend([v.index for v in ret_y_inner['geom_cut'] if isinstance(v, bmesh.types.BMVert)])
-                    cut_edges.extend([e.index for e in ret_y_inner['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-                    ret_y_inner = bmesh.ops.holes_fill(bisection_inner_x, edges=[e for e in ret_y_inner['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-
-                    cut_verts.extend([v.index for v in ret_y_outer['geom_cut'] if isinstance(v, bmesh.types.BMVert)])
-                    cut_edges.extend([e.index for e in ret_y_outer['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-                    ret_y_outer = bmesh.ops.holes_fill(bisection_outer_x, edges=[e for e in ret_y_outer['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-
+                    fill(ret_y_inner,bisection_inner_x)
+                    fill(ret_y_outer,bisection_outer_x)
 
                     to_divide_z = newobj(bisection_inner_x, "bisect-" + str(cut_index_x)+  "-"+str(cut_index_y))
 
@@ -176,7 +175,7 @@ while i <= int(round(object_details.x.max)):
                     bisection_outer_y = bmesh.new()
                     bisection_outer_y.from_mesh(to_divide_z.data)
 
-                    # myDelete(to_divide_z)
+                    myDelete(to_divide_z)
 
                     k = int(round(object_details.z.min))
                     while k <= int(round(object_details.z.max)) + z_step_size:
@@ -185,17 +184,12 @@ while i <= int(round(object_details.x.max)):
                             ret_z_outer = bmesh.ops.bisect_plane(bisection_outer_y, geom=bisection_outer_y.verts[:]+bisection_outer_y.edges[:]+bisection_outer_y.faces[:], plane_co=(0,0,k), plane_no=(0,0,1), clear_inner=True)
                             ret_z_inner = bmesh.ops.bisect_plane(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], plane_co=(0,0,k), plane_no=(0,0,1), clear_outer=True)
                             
-                            cut_verts.extend([v.index for v in ret_z_inner['geom_cut'] if isinstance(v, bmesh.types.BMVert)])
-                            cut_edges.extend([e.index for e in ret_z_inner['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-                            ret_z_inner = bmesh.ops.holes_fill(bisection_inner_y, edges=[e for e in ret_z_inner['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-
-                            cut_verts.extend([v.index for v in ret_z_outer['geom_cut'] if isinstance(v, bmesh.types.BMVert)])
-                            cut_edges.extend([e.index for e in ret_z_outer['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
-                            ret_z_outer = bmesh.ops.holes_fill(bisection_outer_y, edges=[e for e in ret_z_outer['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
+                            fill(ret_z_inner,bisection_inner_y)
+                            fill(ret_z_outer,bisection_outer_y)
 
 
                             # -------->>>> add this row in each process    
-                            bmesh.ops.solidify(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], thickness=0.1)
+                            # bmesh.ops.solidify(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], thickness=0.1)
 
                             if (bisection_inner_y.calc_volume() > 0):
                                 # add object 
@@ -229,7 +223,7 @@ candidate_list = [item.name for item in bpy.data.objects if item.type == "MESH"]
 # # select them only.
 for object_name in candidate_list:
     bpy.data.objects[object_name].select = True
-
+    # bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
     m = bpy.data.objects[object_name].modifiers.new("Solidify", type='SOLIDIFY')
     m.thickness = 0.1
 
@@ -276,4 +270,6 @@ def final_clean():
 
 save_to_folder()
 final_clean()
+
+
 
