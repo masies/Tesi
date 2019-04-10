@@ -1,3 +1,4 @@
+
 # MMBP:Desktop MS$ blender -b -P blenderTest.py 
 
 import math;
@@ -45,6 +46,8 @@ def setup():
 def import_mesh():
     filepath = os.path.join(DIRNAME, MODELS_DIR)
     bpy.ops.import_mesh.stl(filepath=filepath)
+    bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
+    bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
     global obj;
     obj = bpy.data.objects[MESH_NAME]
     obj.hide_render = False;    
@@ -54,7 +57,7 @@ def import_mesh():
     bpy.ops.object.mode_set(mode='OBJECT')
 
     bpy.ops.transform.translate( value = ( 0, 0, -280 ) )
-    #bpy.ops.transform.resize(value=(0.2, 0.2, 1))
+    bpy.ops.transform.resize(value=(1, 1, 1))
 
 setup();
 
@@ -122,7 +125,8 @@ bisection_outer.from_mesh(C.object.data)
 
 def fill(geom,mesh):
 
-    bmesh.ops.holes_fill(mesh, edges=[e for e in geom['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
+    ret = bmesh.ops.holes_fill(mesh, edges=[e for e in geom['geom_cut'] if isinstance(e, bmesh.types.BMEdge)])
+    print(ret)
     # bmesh.ops.face_attribute_fill(mesh, use_data=True, faces=[f for f in geom['geom'] if isinstance(f, bmesh.types.BMFace)])
     # bmesh.ops.dissolve_limit(mesh, angle_limit=0.02, use_dissolve_boundaries=True, verts=[f for f in geom['geom'] if isinstance(f, bmesh.types.BMVert)], edges=[f for f in geom['geom'] if isinstance(f, bmesh.types.BMEdge)])
 
@@ -225,7 +229,14 @@ for object_name in candidate_list:
     bpy.data.objects[object_name].select = True
     # bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
     m = bpy.data.objects[object_name].modifiers.new("Solidify", type='SOLIDIFY')
-    m.thickness = 0.1
+    m.thickness = 0.05
+    m.edge_crease_inner = 0.5
+    m.use_rim_only = True
+    m.use_quality_normals = True
+    m.use_even_offset = True
+
+
+
 
 
 
@@ -270,6 +281,3 @@ def final_clean():
 
 save_to_folder()
 final_clean()
-
-
-
