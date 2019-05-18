@@ -7,14 +7,16 @@ import numpy as np;
 from bpy import context as C
 from  mathutils import Vector
 import os
+import fnmatch
 
 obj = None;
 DIRNAME = os.path.dirname(__file__);
 DIRNAME = "/Users/MS/Desktop/Projects/TESI/Tesi/src"
 RESULTS_DIR = '../results'
-MESH_NAME = "Matter"
+MESH_NAME = "TotaleRep"
 MODELS_DIR = '../models/'+MESH_NAME+'.stl'
 SCALE=1;
+FINAL_SIZE = 1000;
 
 
 def clean_folder():
@@ -49,22 +51,34 @@ def import_mesh():
     global obj;
     obj = bpy.data.objects[MESH_NAME]
     obj.hide_render = False;    
+    bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
+    bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
+    
+    
+    
 
-    x, y, z = bpy.context.active_object.dimensions
-    global SCALE
-    SCALE = 170/x;
-    if y > x:
-        SCALE = 190/y
-    if z > y:
-        SCALE = 60/z;
-        if y > z:
-            SCALE = 200/y
+    # x, y, z = bpy.context.active_object.dimensions
+    # print("x is : ", x)
+    # print("y is : ", y)
+    # print("z is : ", z)
+    # global SCALE
+    # SCALE = FINAL_SIZE/obj.dimensions[0];
+    #bpy.ops.transform.resize(value=(SCALE, SCALE, SCALE))
+    
+    # global SCALE
+    # SCALE = x/20;
+    # if y > x:
+    #     SCALE = y/25
+    # if z > y:
+    #     SCALE = z/20;
+    #     if y > z:
+    #         SCALE = y/25
 
     bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.dissolve_limited()
+    #bpy.ops.mesh.dissolve_limited()
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    bpy.ops.transform.translate( value = ( 0, 0, -280 ) )
+    #bpy.ops.transform.translate( value = ( 0, 0, -280 ) )
 
 setup();
 
@@ -115,16 +129,24 @@ bpy.ops.object.mode_set(mode='OBJECT')
 
 
 # number of cuts performed on each axis
-cut_region = 3
+cut_region =5
 
 # idexes to identify cube global position
 cut_index_y = 0
 cut_index_x = 0
 cut_index_z = 0
 
+print("x is : ", obj.dimensions[0])
+print("y is : ", obj.dimensions[1])
+print("z is : ", obj.dimensions[2])
+
 x_step_size = obj.dimensions[0]/cut_region
-y_step_size = obj.dimensions[1]/cut_region
-z_step_size = obj.dimensions[2]/cut_region
+y_step_size = obj.dimensions[1]/cut_region-1
+z_step_size = 100
+
+print("x_step_size is : ", x_step_size)
+print("y_step_size is : ", y_step_size)
+print("z_step_size is : ", z_step_size)
 
 bisection_outer = bmesh.new()
 bisection_outer.from_mesh(C.object.data)
@@ -141,8 +163,13 @@ def fill(geom,mesh):
     return mesh
 
 
-i = int(round(object_details.y.min))
-while i <= int(round(object_details.y.max))+ y_step_size:
+
+
+i = int(round(object_details.y.min)) 
+while i <= int(round(object_details.y.max)):
+        print("y cutting is :",i)
+        print("max y is :",int(round(object_details.y.min)))
+        print("min y is :",int(round(object_details.y.min)))
         cut_index_y = 0
         cut_index_z = 0
 
@@ -166,9 +193,11 @@ while i <= int(round(object_details.y.max))+ y_step_size:
             bisection_outer_x.from_mesh(to_divide_y.data)
 
             myDelete(to_divide_y)
-             
-            j = int(round(object_details.x.min))
-            while j <= int(round(object_details.x.max))+ x_step_size:
+            
+            j = int(round(object_details.x.min)) 
+            print('J is : ', j)
+
+            while j <= int(round(object_details.x.max)) :
                 cut_index_z = 0
 
                 if (j > int(round(object_details.x.min))):
@@ -191,50 +220,94 @@ while i <= int(round(object_details.y.max))+ y_step_size:
                     bisection_outer_y = bmesh.new()
                     bisection_outer_y.from_mesh(to_divide_z.data)
 
+                    ob = newobj(bisection_outer_y, "bisect-" + str(cut_index_x)+  "-"+str(cut_index_y))
+
+                    
+                    ####################################################################
+            
+                    import duplo
+                    prior_objects = [object.name for object in bpy.context.scene.objects]
+
+                    duplopath = os.path.join(DIRNAME, '../models/DuploPlate.stl')
+                    bpy.ops.import_mesh.stl(filepath=duplopath)
+
+                    new_current_objects = [object.name for object in bpy.context.scene.objects]
+                    new_objects = set(new_current_objects)-set(prior_objects) 
+             
+                    bpy.ops.transform.resize(value=(0.13, 0.13, 0.13))
+                    
+                    plate = bpy.data.objects[next(iter(new_objects))]  
+                    
+                    plate.location[0] = j - ob.dimensions[1] + plate.dimensions[1]/2 -2
+                    plate.location[1] = i + ob.dimensions[0] - plate.dimensions[0]/2 - 35
+                    plate.location[2] = int(round(object_details.z.min)) - 0.8
+
+
+                    ####################################################################
+
+
+
+
+
+
+
+
+                    # bool_one = ob.modifiers.new(type="BOOLEAN", name="bool 1")
+                    # bool_one.object = plate
+                    # bool_one.operation = 'DIFFERENCE'
+                    # for modifier in ob.modifiers:
+                    #        bpy.ops.object.modifier_apply(modifier=modifier.name)
+                    #        print(modifier.name)
+
+                    # plate.hide = True
+             
+             
+                    ####################################################################
+
                     myDelete(to_divide_z)
 
-                    k = int(round(object_details.z.min))
-                    while k <= int(round(object_details.z.max)) + z_step_size:
-                        if (k > int(round(object_details.z.min))):
-                            bisection_inner_y = bisection_outer_y.copy()
-                            ret_z_inner = bmesh.ops.bisect_plane(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], plane_co=(0,0,k), plane_no=(0,0,1), clear_outer=True)
-                            fill(ret_z_inner,bisection_inner_y)
-                            ret_z_outer = bmesh.ops.bisect_plane(bisection_outer_y, geom=bisection_outer_y.verts[:]+bisection_outer_y.edges[:]+bisection_outer_y.faces[:], plane_co=(0,0,k), plane_no=(0,0,1), clear_inner=True)
-                            fill(ret_z_outer,bisection_outer_y)
+                    # k = int(round(object_details.z.min))
+                    # while k <= int(round(object_details.z.max)) + z_step_size:
+                    #     if (k > int(round(object_details.z.min))):
+                    #         bisection_inner_y = bisection_outer_y.copy()
+                    #         ret_z_inner = bmesh.ops.bisect_plane(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], plane_co=(0,0,k), plane_no=(0,0,1), clear_outer=True)
+                    #         fill(ret_z_inner,bisection_inner_y)
+                    #         ret_z_outer = bmesh.ops.bisect_plane(bisection_outer_y, geom=bisection_outer_y.verts[:]+bisection_outer_y.edges[:]+bisection_outer_y.faces[:], plane_co=(0,0,k), plane_no=(0,0,1), clear_inner=True)
+                    #         fill(ret_z_outer,bisection_outer_y)
 
 
                             
 
 
-                            # -------->>>> add this row in each process    
-                            # bmesh.ops.solidify(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], thickness=0.1)
+                    #         # -------->>>> add this row in each process    
+                    #         # bmesh.ops.solidify(bisection_inner_y, geom=bisection_inner_y.verts[:]+bisection_inner_y.edges[:]+bisection_inner_y.faces[:], thickness=0.1)
 
-                            if (bisection_inner_y.calc_volume() > 0):
-                                # add object 
-                                ob = newobj(bisection_inner_y, "bisect-" + str(cut_index_x)+  "-"+str(cut_index_y)+  "-"+str(cut_index_z))
+                    #         if (bisection_inner_y.calc_volume() > 0):
+                    #             # add object 
+                    #             ob = newobj(bisection_inner_y, "bisect-" + str(cut_index_x)+  "-"+str(cut_index_y)+  "-"+str(cut_index_z))
                                 
-                                # # add bounding box to the object
-                                # context = bpy.context
-                                # scene = context.scene
-                                # bm = bmesh.new()
-                                # me = ob.data.copy()
-                                # verts = [bm.verts.new(b) for b in ob.bound_box]
-                                # bmesh.ops.convex_hull(bm, input=verts)
-                                # bm.to_mesh(me)
-                                # newobj(bm, "box-" + str(cut_index_x)+  "-"+str(cut_index_y)+  "-"+str(cut_index_z))
+                    #             # # add bounding box to the object
+                    #             # context = bpy.context
+                    #             # scene = context.scene
+                    #             # bm = bmesh.new()
+                    #             # me = ob.data.copy()
+                    #             # verts = [bm.verts.new(b) for b in ob.bound_box]
+                    #             # bmesh.ops.convex_hull(bm, input=verts)
+                    #             # bm.to_mesh(me)
+                    #             # newobj(bm, "box-" + str(cut_index_x)+  "-"+str(cut_index_y)+  "-"+str(cut_index_z))
 
 
 
-                            bisection_inner_y.free()  # free and prevent further access
+                    #         bisection_inner_y.free()  # free and prevent further access
                             
-                            cut_index_z+=1
-                        k += z_step_size
+                    #         cut_index_z+=1
+                    #     k += z_step_size
 
                     cut_index_y+=1
-                j += y_step_size
+                j += x_step_size
 
             cut_index_x+=1
-        i += x_step_size
+        i += y_step_size
 
 # # attempt to fill holes in meshes
 candidate_list = [item.name for item in bpy.data.objects if item.type == "MESH"]
@@ -242,15 +315,50 @@ candidate_list = [item.name for item in bpy.data.objects if item.type == "MESH"]
 for object_name in candidate_list:
     bpy.data.objects[object_name].select = True
     # bpy.ops.object.origin_set(type='GEOMETRY_ORIGIN')
-    m = bpy.data.objects[object_name].modifiers.new("Solidify", type='SOLIDIFY')
-    m.thickness = 0.05
-    m.edge_crease_inner = 0.5
-    m.use_rim_only = True
-    m.use_quality_normals = True
-    m.use_even_offset = True
+    #m = bpy.data.objects[object_name].modifiers.new("Solidify", type='SOLIDIFY')
+    #m.thickness = 0.05
+    #m.edge_crease_inner = 0.5
+    #m.use_rim_only = True
+    #m.use_quality_normals = True
+    #m.use_even_offset = True
 
 # will need this line to have max scale for each
-# bpy.ops.transform.resize(value=(SCALE, SCALE, SCALE))
+#bpy.ops.transform.resize(value=(0.2, 0.2, 0.2))
+
+scene = bpy.context.scene
+
+
+bisect_objs = [obj for obj in scene.objects if fnmatch.fnmatchcase(obj.name, "bisect*")]
+plate_objs = [obj for obj in scene.objects if fnmatch.fnmatchcase(obj.name, "Duplo*")]
+
+
+for ob in bisect_objs:
+    for on_p in plate_objs:
+        bool_one = ob.modifiers.new(type="BOOLEAN", name="bool 1")
+        bool_one.object = on_p
+        bool_one.operation = 'DIFFERENCE'
+    for modifier in ob.modifiers:
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+            print(modifier.name)
+    print(ob)
+
+# target_obj = context.active_object
+#  tool_objs = [o for o in context.selected_objects if o != target_obj]
+
+#  BOOL = 'BOOLEAN'
+#  # first add them.
+#  for obj in tool_objs:
+#      bool_mod = target_obj.modifiers.new(name='diff_' + obj.name, type=BOOL)
+#      bool_mod.operation = 'DIFFERENCE'
+#      bool_mod.object = obj
+#      obj.hide = True
+
+#  # then apply them individually.
+#  for modifier in target_obj.modifiers:
+#      bpy.ops.object.modifier_apply(modifier=modifier.name)
+
+print(bisect_objs)
+print(plate_objs)
 
 
 
@@ -299,6 +407,7 @@ def final_clean():
 
 save_to_folder()
 final_clean()
+
 
 
 
