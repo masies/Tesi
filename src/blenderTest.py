@@ -13,7 +13,7 @@ obj = None;
 DIRNAME = os.path.dirname(__file__);
 DIRNAME = "/Users/MS/Desktop/Projects/TESI/Tesi/src"
 RESULTS_DIR = '../results'
-MESH_NAME = "TotaleRep"
+MESH_NAME = "Totale"
 MODELS_DIR = '../models/'+MESH_NAME+'.stl'
 SCALE=1;
 FINAL_SIZE = 1000;
@@ -129,7 +129,7 @@ bpy.ops.object.mode_set(mode='OBJECT')
 
 
 # number of cuts performed on each axis
-cut_region =5
+cut_region =2
 
 # idexes to identify cube global position
 cut_index_y = 0
@@ -141,7 +141,7 @@ print("y is : ", obj.dimensions[1])
 print("z is : ", obj.dimensions[2])
 
 x_step_size = obj.dimensions[0]/cut_region
-y_step_size = obj.dimensions[1]/cut_region-1
+y_step_size = obj.dimensions[1]/cut_region
 z_step_size = 100
 
 print("x_step_size is : ", x_step_size)
@@ -226,21 +226,23 @@ while i <= int(round(object_details.y.max)):
                     ####################################################################
             
                     # import duplo
-                    prior_objects = [object.name for object in bpy.context.scene.objects]
+                    if i <= int(round(object_details.y.max)) - y_step_size:
+                        if j  <= int(round(object_details.x.max)) - x_step_size:
+                            prior_objects = [object.name for object in bpy.context.scene.objects]
 
-                    duplopath = os.path.join(DIRNAME, '../models/DuploPlate.stl')
-                    bpy.ops.import_mesh.stl(filepath=duplopath)
+                            duplopath = os.path.join(DIRNAME, '../models/DuploPlate.stl')
+                            bpy.ops.import_mesh.stl(filepath=duplopath)
 
-                    new_current_objects = [object.name for object in bpy.context.scene.objects]
-                    new_objects = set(new_current_objects)-set(prior_objects) 
-             
-                    bpy.ops.transform.resize(value=(0.13, 0.13, 0.13))
-                    
-                    plate = bpy.data.objects[next(iter(new_objects))]  
-                    
-                    plate.location[0] = j - ob.dimensions[1] + plate.dimensions[1]/2 -2
-                    plate.location[1] = i + ob.dimensions[0] - plate.dimensions[0]/2 - 35
-                    plate.location[2] = int(round(object_details.z.min)) - 0.8
+                            new_current_objects = [object.name for object in bpy.context.scene.objects]
+                            new_objects = set(new_current_objects)-set(prior_objects) 
+                     
+                            bpy.ops.transform.resize(value=(0.13, 0.13, 0.13))
+                            
+                            plate = bpy.data.objects[next(iter(new_objects))]  
+                            
+                            plate.location[0] = j #- ob.dimensions[1] + plate.dimensions[1]/2
+                            plate.location[1] = i #+ ob.dimensions[0] - plate.dimensions[0]/2 
+                            plate.location[2] = int(round(object_details.z.min)) - 0.8
 
 
                     ####################################################################
