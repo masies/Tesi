@@ -225,7 +225,7 @@ while i <= int(round(object_details.y.max)):
                     
                     ####################################################################
             
-                    import duplo
+                    # import duplo
                     prior_objects = [object.name for object in bpy.context.scene.objects]
 
                     duplopath = os.path.join(DIRNAME, '../models/DuploPlate.stl')
