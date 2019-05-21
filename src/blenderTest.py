@@ -13,8 +13,8 @@ obj = None;
 DIRNAME = os.path.dirname(__file__);
 DIRNAME = "/Users/MS/Desktop/Projects/TESI/Tesi/src"
 RESULTS_DIR = '../results'
-MESH_NAME = "Totale"
-MODELS_DIR = '../models/'+MESH_NAME+'.stl'
+MESH_NAME = "2x2Remastered"
+MODELS_DIR = '../models/finalCut/'+MESH_NAME+'.stl'
 SCALE=1;
 FINAL_SIZE = 1000;
 
@@ -28,8 +28,18 @@ def clean_folder():
 
 # Delete all object in scene, setup and clean
 def clean_scene():
+    for bpy_data_iter in (
+                bpy.data.objects,
+                bpy.data.meshes,
+                bpy.data.lamps,
+                bpy.data.cameras,
+        ):
+            for id_data in bpy_data_iter:
+                bpy_data_iter.remove(id_data)
+
     # gather list of items of interest.
     candidate_list = [item.name for item in bpy.data.objects if item.type == "MESH"]
+
     # select them only.
     for object_name in candidate_list:
       bpy.data.objects[object_name].select = True
@@ -129,7 +139,7 @@ bpy.ops.object.mode_set(mode='OBJECT')
 
 
 # number of cuts performed on each axis
-cut_region =2
+cut_region =5
 
 # idexes to identify cube global position
 cut_index_y = 0
@@ -167,9 +177,7 @@ def fill(geom,mesh):
 
 i = int(round(object_details.y.min)) 
 while i <= int(round(object_details.y.max)):
-        print("y cutting is :",i)
-        print("max y is :",int(round(object_details.y.min)))
-        print("min y is :",int(round(object_details.y.min)))
+        # print("y cutting is :",i)
         cut_index_y = 0
         cut_index_z = 0
 
@@ -195,9 +203,9 @@ while i <= int(round(object_details.y.max)):
             myDelete(to_divide_y)
             
             j = int(round(object_details.x.min)) 
-            print('J is : ', j)
-
             while j <= int(round(object_details.x.max)) :
+                # print("x cutting is :",j)
+
                 cut_index_z = 0
 
                 if (j > int(round(object_details.x.min))):
@@ -221,9 +229,35 @@ while i <= int(round(object_details.y.max)):
                     bisection_outer_y.from_mesh(to_divide_z.data)
 
                     ob = newobj(bisection_outer_y, "bisect-" + str(cut_index_x)+  "-"+str(cut_index_y))
+                    print("obj      : ","bisect-" + str(cut_index_x)+  "-"+str(cut_index_y))
+                    print("obj x is : ", ob.dimensions[0])
+                    print("obj y is : ", ob.dimensions[1])
+
 
                     
                     ####################################################################
+
+                    bpy.ops.object.text_add()
+                    tx=bpy.context.object
+                    tx.data.body = ">" + str(cut_index_x)+  "-"+str(cut_index_y)
+                    bpy.ops.transform.resize(value=(-10, 10, 10))
+                    tx.location[0] = j - ob.dimensions[0]/2 + tx.dimensions[0]/2 
+                    tx.location[1] = i - ob.dimensions[1]/2 + tx.dimensions[1]/2 
+                    tx.location[2] = int(round(object_details.z.min)) + 1
+                    bpy.context.scene.objects.active = tx        #make sure my Text object is correctly selected
+                    tx.select = True
+                    bpy.ops.object.convert(target="MESH") 
+
+
+                  
+              
+
+
+
+
+                    
+
+                    
             
                     # import duplo
                     if i <= int(round(object_details.y.max)) - y_step_size:
@@ -242,7 +276,7 @@ while i <= int(round(object_details.y.max)):
                             
                             plate.location[0] = j #- ob.dimensions[1] + plate.dimensions[1]/2
                             plate.location[1] = i #+ ob.dimensions[0] - plate.dimensions[0]/2 
-                            plate.location[2] = int(round(object_details.z.min)) - 0.8
+                            plate.location[2] = int(round(object_details.z.min))  -1.4
 
 
                     ####################################################################
@@ -324,14 +358,20 @@ for object_name in candidate_list:
     #m.use_quality_normals = True
     #m.use_even_offset = True
 
-# will need this line to have max scale for each
-#bpy.ops.transform.resize(value=(0.2, 0.2, 0.2))
+
 
 scene = bpy.context.scene
 
 
 bisect_objs = [obj for obj in scene.objects if fnmatch.fnmatchcase(obj.name, "bisect*")]
 plate_objs = [obj for obj in scene.objects if fnmatch.fnmatchcase(obj.name, "Duplo*")]
+Texts = [obj for obj in scene.objects if fnmatch.fnmatchcase(obj.name, "Text*")]
+    # # select them only.
+for text in Texts:
+    # text.select = True
+    tx = text.modifiers.new("Solidify", type='SOLIDIFY')
+    tx.thickness = 0.2
+    # bpy.ops.object.convert(target='MESH')
 
 
 for ob in bisect_objs:
@@ -342,7 +382,19 @@ for ob in bisect_objs:
     for modifier in ob.modifiers:
             bpy.ops.object.modifier_apply(modifier=modifier.name)
             print(modifier.name)
-    print(ob)
+    # print(ob)
+
+for ob in bisect_objs:
+    for on_p in Texts:
+        bool_two = ob.modifiers.new(type="BOOLEAN", name="bool 2")
+        bool_two.object = on_p
+        bool_two.operation = 'DIFFERENCE'
+    for modifier in ob.modifiers:
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+            print(modifier.name)
+    # print(ob)
+
+
 
 # target_obj = context.active_object
 #  tool_objs = [o for o in context.selected_objects if o != target_obj]
@@ -356,14 +408,15 @@ for ob in bisect_objs:
 #      obj.hide = True
 
 #  # then apply them individually.
-#  for modifier in target_obj.modifiers:
-#      bpy.ops.object.modifier_apply(modifier=modifier.name)
+ # for modifier in target_obj.modifiers:
+ #     bpy.ops.object.modifier_apply(modifier=modifier.name)
 
 print(bisect_objs)
 print(plate_objs)
 
 
-
+# will need this line to have max scale for each
+bpy.ops.transform.resize(value=(5, 5, 5))
 
 
 
