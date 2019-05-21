@@ -240,10 +240,10 @@ while i <= int(round(object_details.y.max)):
                     bpy.ops.object.text_add()
                     tx=bpy.context.object
                     tx.data.body = ">" + str(cut_index_x)+  "-"+str(cut_index_y)
-                    bpy.ops.transform.resize(value=(-10, 10, 10))
+                    bpy.ops.transform.resize(value=(-5, 5, 5))
                     tx.location[0] = j - ob.dimensions[0]/2 + tx.dimensions[0]/2 
                     tx.location[1] = i - ob.dimensions[1]/2 + tx.dimensions[1]/2 
-                    tx.location[2] = int(round(object_details.z.min)) + 1
+                    tx.location[2] = int(round(object_details.z.min)) + 0.5
                     bpy.context.scene.objects.active = tx        #make sure my Text object is correctly selected
                     tx.select = True
                     bpy.ops.object.convert(target="MESH") 
@@ -370,7 +370,7 @@ Texts = [obj for obj in scene.objects if fnmatch.fnmatchcase(obj.name, "Text*")]
 for text in Texts:
     # text.select = True
     tx = text.modifiers.new("Solidify", type='SOLIDIFY')
-    tx.thickness = 0.2
+    tx.thickness = 0.5
     # bpy.ops.object.convert(target='MESH')
 
 
@@ -416,7 +416,7 @@ print(plate_objs)
 
 
 # will need this line to have max scale for each
-bpy.ops.transform.resize(value=(5, 5, 5))
+bpy.ops.transform.resize(value=(cut_region, cut_region, cut_region))
 
 
 
